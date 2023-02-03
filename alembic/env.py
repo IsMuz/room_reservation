@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from alembic import context
 
+from app.core.base import Base
 
 load_dotenv('.env')
 
@@ -24,11 +25,12 @@ config.set_main_option('sqlalchemy.url', os.environ['DATABASE_URL'])
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = None
+target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
