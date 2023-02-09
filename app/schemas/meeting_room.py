@@ -18,6 +18,14 @@ class MeetingRoomCreate(MeetingRoomBase):
             raise ValueError('can not be none')
         return v
 
+class MeetingRoomUpdate(MeetingRoomBase):
+    @validator('name')
+    def name_is_not_none(cls, v):
+        if v is None:
+            raise ValueError('can not be none')
+        return v
+    pass
+
 
 class MeetingRoomDB(MeetingRoomBase):
     id: int
