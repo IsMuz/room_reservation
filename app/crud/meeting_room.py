@@ -3,13 +3,17 @@ from app.models.meeting_room import MeetingRoom
 from app.schemas.meeting_room import MeetingRoomCreate
 from typing import Optional
 from sqlalchemy import select
+# Импортируем класс асинхронной сессии для аннотаций.
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 # Функция работает с асинхронной сессией,
 # поэтому ставим ключевое слово async.
 # В функцию передаём схему MeetingRoomCreate.
 async def create_meeting_room(
-        new_room: MeetingRoomCreate
+        new_room: MeetingRoomCreate,
+        # Добавляем новый параметр.
+        session: AsyncSession,
 ) -> MeetingRoom:
     # Конвертируем объект MeetingRoomCreate в словарь.
     new_room_data = new_room.dict()
@@ -18,19 +22,9 @@ async def create_meeting_room(
     # В параметры передаём пары "ключ=значение", для этого распаковываем словарь.
     db_room = MeetingRoom(**new_room_data)
 
-    # Создаём асинхронную сессию через контекстный менеджер.
-    async with AsyncSessionLocal() as session:
-        # Добавляем созданный объект в сессию.
-        # Никакие действия с базой пока ещё не выполняются.
-        session.add(db_room)
-
-        # Записываем изменения непосредственно в БД.
-        # Так как сессия асинхронная, используем ключевое слово await.
-        await session.commit()
-
-        # Обновляем объект db_room: считываем данные из БД, чтобы получить его id.
-        await session.refresh(db_room)
-    # Возвращаем только что созданный объект класса MeetingRoom.
+    session.add(db_room)
+    await session.commit()
+    await session.refresh(db_room)
     return db_room
 
 
