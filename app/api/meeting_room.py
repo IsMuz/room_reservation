@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from app.crud.meeting_room import (
     create_meeting_room, get_room_id_by_name,
     read_all_rooms_from_db, update_meeting_room,
-    get_meeting_room_by_id
+    get_meeting_room_by_id, delete_meeting_room
 )
 from app.schemas.meeting_room import MeetingRoomCreate, MeetingRoomDB, MeetingRoomUpdate
 
@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 # Импортируем асинхронный генератор сессий.
 from app.core.db import get_async_session
+from app.models.meeting_room import MeetingRoom
 
 router = APIRouter(
     prefix='/meeting_rooms',
@@ -63,16 +64,7 @@ async def partially_update_meeting_room(
 ):
     # Получаем объект из БД по ID.
     # В ответ ожидается либо None, либо объект класса MeetingRoom.
-    meeting_room = await get_meeting_room_by_id(
-        meeting_room_id, session
-    )
-
-    if meeting_room is None:
-        raise HTTPException(
-            # Для отсутствующего объекта вернем статус 404 — Not found.
-            status_code=404,
-            detail='Переговорка не найдена!'
-        )
+    meeting_room = check_meeting_room_exists(meeting_room_id, session)
 
     if obj_in.name is not None:
         # Если в запросе получено поле name — проверяем его на уникальность.
@@ -81,6 +73,24 @@ async def partially_update_meeting_room(
     # Передаём в корутину все необходимые для обновления данные.
     meeting_room = await update_meeting_room(
         meeting_room, obj_in, session
+    )
+    return meeting_room
+
+@router.delete(
+    '/{meeting_room_id}',
+    response_model=MeetingRoomDB,
+    response_model_exclude_none=True,
+)
+async def remove_meeting_room(
+        meeting_room_id: int,
+        session: AsyncSession = Depends(get_async_session),
+):
+    # Выносим повторяющийся код в отдельную корутину.
+    meeting_room = await check_meeting_room_exists(
+        meeting_room_id, session
+    )
+    meeting_room = await delete_meeting_room(
+        meeting_room, session
     )
     return meeting_room
 
@@ -94,4 +104,20 @@ async def check_name_duplicate(
             status_code=422,
             detail='Переговорка с таким именем уже существует!',
         )
+
+async def check_meeting_room_exists(
+        meeting_room_id: int,
+        session: AsyncSession,
+) -> MeetingRoom:
+    meeting_room = await get_meeting_room_by_id(
+        meeting_room_id, session
+    )
+
+    if meeting_room is None:
+        raise HTTPException(
+            # Для отсутствующего объекта вернем статус 404 — Not found.
+            status_code=404,
+            detail='Переговорка не найдена!'
+        )
+    return meeting_room
 
