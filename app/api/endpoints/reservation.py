@@ -39,7 +39,7 @@ async def create_reservation(
 async def get_all_reservations(
     session: AsyncSession = Depends(get_async_session)
 ):
-    reservations = reservation_crud.get_multi(session)
+    reservations = await reservation_crud.get_multi(session)
     return reservations
 
 

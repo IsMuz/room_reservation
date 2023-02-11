@@ -4,7 +4,9 @@ from fastapi import APIRouter, HTTPException, Depends
 
 # Вместо импортов 6 функций импортируйте объект meeting_room_crud.
 from app.crud.meeting_room import meeting_room_crud
+from app.crud.reservation import reservation_crud
 from app.schemas.meeting_room import MeetingRoomCreate, MeetingRoomDB, MeetingRoomUpdate
+from app.schemas.reservation import ReservationDB
 from app.api.validators import check_meeting_room_exists, check_name_duplicate
 
 # Импортируем класс асинхронной сессии для аннотации параметра.
@@ -62,7 +64,7 @@ async def partially_update_meeting_room(
 ):
     # Получаем объект из БД по ID.
     # В ответ ожидается либо None, либо объект класса MeetingRoom.
-    meeting_room = check_meeting_room_exists(meeting_room_id, session)
+    meeting_room = await check_meeting_room_exists(meeting_room_id, session)
 
     if obj_in.name is not None:
         # Если в запросе получено поле name — проверяем его на уникальность.
@@ -93,3 +95,18 @@ async def remove_meeting_room(
     )
     return meeting_room
 
+@router.get(
+    '/{meeting_room_id}/reservations',
+    response_model=list[ReservationDB]
+)
+async def get_reservations(
+    meeting_room_id: int,
+    session: AsyncSession = Depends(get_async_session),
+):
+    await check_meeting_room_exists(
+        meeting_room_id, session
+    )
+    reservations = await reservation_crud.get_future_reservations_by_meeting_room(
+        meeting_room_id, session
+    )
+    return reservations

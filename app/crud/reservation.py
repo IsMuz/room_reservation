@@ -22,6 +22,7 @@ class CRUDReservation(CRUDBase):
         reservation_id: Optional[int] = None,
         session: AsyncSession,
     ) -> list[Reservation]:
+        # Выносим уже существующий запрос в отдельное выражение.
         select_stmt = select(Reservation).where(
             Reservation.meetingroom_id == meetingroom_id,
             and_(
@@ -29,16 +30,28 @@ class CRUDReservation(CRUDBase):
                 to_reserve >= Reservation.from_reserve
             )
         )
+        # Если передан id бронирования...
         if reservation_id is not None:
             # ... то к выражению нужно добавить новое условие.
             select_stmt = select_stmt.where(
                 # id искомых объектов не равны id обновляемого объекта.
                 Reservation.id != reservation_id
             )
+        # Выполняем запрос.
+        reservations = await session.execute(select_stmt)
+        reservations = reservations.scalars().all()
+        return reservations
 
-        reservations = await session.execute(
-            select_stmt
+    async def get_future_reservations_by_meeting_room(
+        self,
+        meetingroom_id: int,
+        session: AsyncSession,
+    ) -> list[Reservation]:
+        select_reservs = select(Reservation).where(
+            Reservation.meetingroom_id == meetingroom_id,
+            Reservation.to_reserve > datetime.now()
         )
+        reservations = await session.execute(select_reservs)
         reservations = reservations.scalars().all()
         return reservations
 

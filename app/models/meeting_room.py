@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 
 # Импортируем базовый класс для моделей.
 from app.core.db import Base
+from app.models.reservation import Reservation
 
 
 class MeetingRoom(Base):
@@ -10,4 +11,4 @@ class MeetingRoom(Base):
     # уникальным и непустым.
     name = Column(String(100), unique=True, nullable=False)
     description = Column(Text)
-    reservations = relationship('Reservation', cascade='delete')
+    reservations = relationship(Reservation, cascade='delete')
