@@ -46,3 +46,15 @@ async def check_reservation_intersections(
             detail=str(reservations)
         )
 
+
+async def check_reservation_before_edit(
+    reservation_id: int,
+    session: AsyncSession,
+) -> Reservation:
+    reservation = reservation_crud.get(obj_id=reservation_id, session=session)
+    if reservation is None:
+        raise HTTPException(
+            status_code=404,
+            detail='Запись не найдена!'
+        )
+    return reservation
